@@ -124,7 +124,7 @@
   color: #82C0CC;
 }
 
-/* Doctor badge */
+/* Doctor / User badge */
 .doctor-badge {
   display: flex;
   align-items: center;
@@ -166,15 +166,33 @@
 .doc-role {
   font-size: 0.7rem;
   color: #16697A;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 [data-theme="dark"] .doc-role, .dark-theme .doc-role {
   color: #82C0CC;
 }
 
+.logout-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  margin-left: 0.35rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  color: #e11d48;
+  background: rgba(225, 29, 72, 0.12);
+}
+
 @media (max-width: 860px) {
-  .brand-subtitle, .doctor-badge {
+  .brand-subtitle {
     display: none;
   }
   .nav-item span {

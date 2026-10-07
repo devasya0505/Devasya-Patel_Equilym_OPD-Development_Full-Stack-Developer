@@ -2,9 +2,10 @@ import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
+import { AuthService } from '../../services/auth.service';
 
 /**
- * NavbarComponent — Top header navigation with branding, active routing, and Theme Toggle.
+ * NavbarComponent — Top header navigation with branding, active routing, Theme Toggle, and User Profile.
  */
 @Component({
   selector: 'app-navbar',
@@ -15,6 +16,7 @@ import { ThemeService } from '../../services/theme.service';
 })
 export class NavbarComponent {
   themeService = inject(ThemeService);
+  authService = inject(AuthService);
 
   // Navigation tabs for the 3 assignment screens + Overview
   navItems = [
@@ -26,5 +28,9 @@ export class NavbarComponent {
 
   toggleTheme(): void {
     this.themeService.toggleTheme();
+  }
+
+  logout(): void {
+    this.authService.logout();
   }
 }

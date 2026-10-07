@@ -75,9 +75,6 @@ public class ConsultationController {
     @GetMapping("/appointment/{appointmentId}")
     public ResponseEntity<Consultation> getByAppointment(@PathVariable Long appointmentId) {
         Consultation consultation = consultationService.getConsultationByAppointment(appointmentId);
-        if (consultation == null) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(consultation);
     }
 }

@@ -24,6 +24,7 @@ This guide is specifically designed to help you confidently present and explain 
 > 1. * **Patient Registration & Search:** Registration with strict validations and real-time multi-field search by name or contact.*
 > 2. * **Appointment Booking & Queue:** Chronologically ordered schedule for today's active patient queue.*
 > 3. * **Doctor Consultation Room:** Recording vitals like Blood Pressure and Temperature, entering clinical notes, and atomically closing consultations with full historical timeline tracking.*
+> 4. * **Authentication & Access:** Basic login with session persistence, route guards, and quick role presets (Doctor: `doctor@equicare.com` / `doctor123`, Receptionist: `reception@equicare.com` / `reception123`).*
 >
 > *Architecturally, the backend follows a clean **Controller-Service-Repository-Entity** layered pattern with Bean Validation and global error handling, while the frontend is built using **Angular Standalone Components, Reactive Forms, RxJS Observables**, and a modern health-tech design system."*
 

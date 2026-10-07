@@ -138,7 +138,8 @@ export class AppointmentsComponent implements OnInit {
     const payload: Partial<Appointment> = {
       doctorName: formVal.doctorName,
       appointmentDate: formVal.appointmentDate,
-      appointmentTime: timeVal
+      appointmentTime: timeVal,
+      status: 'BOOKED'
     };
 
     this.appointmentService.bookAppointment(payload, patientId).subscribe({

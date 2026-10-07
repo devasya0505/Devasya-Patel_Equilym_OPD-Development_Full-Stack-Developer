@@ -61,10 +61,15 @@ public class Consultation {
     private LocalDateTime consultedAt;
 
     /**
-     * Auto-set the consultation timestamp when first saved.
+     * Auto-set defaults when first saved.
      */
     @PrePersist
     protected void onCreate() {
-        this.consultedAt = LocalDateTime.now();
+        if (this.isCompleted == null) {
+            this.isCompleted = false;
+        }
+        if (this.consultedAt == null) {
+            this.consultedAt = LocalDateTime.now();
+        }
     }
 }

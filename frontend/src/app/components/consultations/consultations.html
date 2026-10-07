@@ -30,35 +30,63 @@
       
       <!-- Left Column: Patient & Appointment Selection -->
       <div class="appointment-picker glass-card">
-        <h2 class="card-title"><i class="fa-solid fa-list-check text-cyan mr-2"></i> Select Appointment Queue</h2>
-        <p class="card-subtitle">Choose a scheduled patient from today's list:</p>
-
-        <div class="appointment-list">
-          @for (app of allAppointments; track app.id) {
-            <div class="appt-item" 
-                 [class.selected]="selectedAppointment?.id === app.id"
-                 (click)="selectAppointment(app)">
-              
-              <div class="appt-item-header">
-                <span class="patient-title">{{ app.patient.name }}</span>
-                <span class="badge" [ngClass]="app.status === 'COMPLETED' ? 'badge-completed' : 'badge-booked'">
-                  {{ app.status }}
-                </span>
-              </div>
-
-              <div class="appt-item-body">
-                <span><i class="fa-regular fa-clock text-cyan"></i> {{ app.appointmentTime }}</span>
-                <span><i class="fa-solid fa-phone text-muted"></i> {{ app.patient.phone }}</span>
-              </div>
-
-              <div class="appt-item-footer">
-                <span>{{ app.patient.gender }}, {{ app.patient.age }} yrs</span>
-                <span class="doctor-tag">{{ app.doctorName.split(' ')[0] }} {{ app.doctorName.split(' ')[1] }}</span>
-              </div>
-
-            </div>
-          }
+        <div class="picker-header">
+          <div>
+            <h2 class="card-title"><i class="fa-solid fa-list-check text-cyan mr-1"></i> Appointment Queue</h2>
+            <p class="card-subtitle">Select a scheduled patient:</p>
+          </div>
+          <div class="queue-filter-pills">
+            <button class="filter-pill" [class.active]="queueFilter === 'all'" (click)="queueFilter = 'all'">
+              All ({{ allAppointments.length }})
+            </button>
+            <button class="filter-pill" [class.active]="queueFilter === 'today'" (click)="queueFilter = 'today'">
+              Today ({{ todayAppointments.length }})
+            </button>
+          </div>
         </div>
+
+        @if (isLoadingQueue) {
+          <div class="loading-state">
+            <i class="fa-solid fa-circle-notch fa-spin text-cyan fa-2x"></i>
+            <p class="mt-2">Loading appointments...</p>
+          </div>
+        } @else if (displayedQueue.length === 0) {
+          <div class="empty-state-queue">
+            <i class="fa-solid fa-calendar-xmark text-dim fa-2x mb-2"></i>
+            <h4>No Appointments in Queue</h4>
+            <p class="text-sm text-muted">Book a patient appointment first.</p>
+            <a routerLink="/appointments" class="btn btn-primary btn-sm mt-2">
+              <i class="fa-solid fa-plus"></i> Book Appointment
+            </a>
+          </div>
+        } @else {
+          <div class="appointment-list">
+            @for (app of displayedQueue; track app.id) {
+              <div class="appt-item" 
+                   [class.selected]="selectedAppointment?.id === app.id"
+                   (click)="selectAppointment(app)">
+                
+                <div class="appt-item-header">
+                  <span class="patient-title">{{ app.patient.name }}</span>
+                  <span class="badge" [ngClass]="app.status === 'COMPLETED' ? 'badge-completed' : 'badge-booked'">
+                    {{ app.status }}
+                  </span>
+                </div>
+
+                <div class="appt-item-body">
+                  <span><i class="fa-regular fa-clock text-cyan mr-1"></i> {{ app.appointmentTime }}</span>
+                  <span><i class="fa-solid fa-phone text-muted mr-1"></i> {{ app.patient.phone }}</span>
+                </div>
+
+                <div class="appt-item-footer">
+                  <span>{{ app.patient.gender }}, {{ app.patient.age }} yrs</span>
+                  <span class="doctor-tag">{{ app.doctorName }}</span>
+                </div>
+
+              </div>
+            }
+          </div>
+        }
       </div>
 
       <!-- Right Column: Clinical Consultation Form -->
@@ -102,8 +130,8 @@
             <div class="status-alert alert-completed">
               <i class="fa-solid fa-circle-check"></i>
               <div>
-                <strong>Consultation Completed & Closed</strong>
-                <p>This consultation was finalized on {{ existingConsultation?.consultedAt | date:'medium' }}.</p>
+                <strong>Consultation Completed & Finalized</strong>
+                <p>Recorded on {{ existingConsultation?.consultedAt | date:'medium' }}.</p>
               </div>
             </div>
           }

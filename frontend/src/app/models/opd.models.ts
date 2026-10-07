@@ -41,3 +41,11 @@ export interface QuickStats {
   pendingAppointments: number;
   completedConsultations: number;
 }
+
+export interface User {
+  token: string;
+  email: string;
+  name: string;
+  role: 'DOCTOR' | 'RECEPTIONIST' | 'ADMIN';
+  message?: string;
+}

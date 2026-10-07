@@ -11,9 +11,6 @@ import java.time.LocalTime;
  * 
  * Links a Patient to a Doctor on a specific date/time.
  * Status tracks the appointment lifecycle: BOOKED → COMPLETED / CANCELLED.
- * 
- * @ManyToOne — Each appointment belongs to ONE patient (many appointments per patient)
- * @JoinColumn — Creates a foreign key 'patient_id' in the appointments table
  */
 @Entity
 @Table(name = "appointments")
@@ -28,17 +25,16 @@ public class Appointment {
     private Long id;
 
     // Foreign key relationship: many appointments can belong to one patient
-    // FetchType.EAGER = always load patient data with the appointment
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
-    // Doctor's name — simple string (no separate Doctor entity needed for this demo)
+    // Doctor's name
     @NotBlank(message = "Doctor name is required")
     @Column(name = "doctor_name", nullable = false)
     private String doctorName;
 
-    // Appointment date — must be today or in the future
+    // Appointment date
     @NotNull(message = "Appointment date is required")
     @Column(name = "appointment_date", nullable = false)
     private LocalDate appointmentDate;
@@ -53,6 +49,16 @@ public class Appointment {
     @Column(nullable = false)
     @Builder.Default
     private AppointmentStatus status = AppointmentStatus.BOOKED;
+
+    /**
+     * JPA lifecycle callback — guarantees status is never null before inserting to DB.
+     */
+    @PrePersist
+    protected void onCreate() {
+        if (this.status == null) {
+            this.status = AppointmentStatus.BOOKED;
+        }
+    }
 
     // Enum for appointment lifecycle states
     public enum AppointmentStatus {

@@ -12,19 +12,21 @@
       </div>
     </a>
 
-    <!-- Navigation Links -->
-    <nav class="nav-links">
-      @for (item of navItems; track item.route) {
-        <a [routerLink]="item.route" 
-           routerLinkActive="active" 
-           class="nav-item">
-          <i class="fa-solid" [class]="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      }
-    </nav>
+    <!-- Navigation Links (Shown when logged in) -->
+    @if (authService.isLoggedIn()) {
+      <nav class="nav-links">
+        @for (item of navItems; track item.route) {
+          <a [routerLink]="item.route" 
+             routerLinkActive="active" 
+             class="nav-item">
+            <i class="fa-solid" [class]="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </nav>
+    }
 
-    <!-- Header Actions: Theme Toggle & Doctor Badge -->
+    <!-- Header Actions: Theme Toggle, User Profile & Logout -->
     <div class="header-actions">
       
       <!-- Theme Switcher Button -->
@@ -38,16 +40,30 @@
         }
       </button>
 
-      <!-- Doctor Badge -->
-      <div class="doctor-badge">
-        <div class="avatar">
-          <i class="fa-solid fa-user-md"></i>
+      <!-- Logged-in User Badge & Logout -->
+      @if (authService.isLoggedIn()) {
+        <div class="doctor-badge">
+          <div class="avatar">
+            @if (authService.userRole() === 'DOCTOR') {
+              <i class="fa-solid fa-user-md"></i>
+            } @else {
+              <i class="fa-solid fa-user-tie"></i>
+            }
+          </div>
+          <div class="doctor-info">
+            <span class="doc-name">{{ authService.userName() }}</span>
+            <span class="doc-role">{{ authService.userRole() }}</span>
+          </div>
+          
+          <button class="logout-btn" (click)="logout()" title="Logout of session">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
         </div>
-        <div class="doctor-info">
-          <span class="doc-name">Dr. Anita Desai</span>
-          <span class="doc-role">OPD Duty Doctor</span>
-        </div>
-      </div>
+      } @else {
+        <a routerLink="/login" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-right-to-bracket"></i> Login
+        </a>
+      }
 
     </div>
 

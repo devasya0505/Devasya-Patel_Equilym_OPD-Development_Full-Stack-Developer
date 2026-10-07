@@ -3,20 +3,22 @@ import { DashboardComponent } from './components/dashboard/dashboard';
 import { PatientsComponent } from './components/patients/patients';
 import { AppointmentsComponent } from './components/appointments/appointments';
 import { ConsultationsComponent } from './components/consultations/consultations';
+import { LoginComponent } from './components/login/login';
+import { authGuard } from './guards/auth.guard';
 
 /**
  * Application Routing Table.
  * 
- * Maps URL paths to our 3 core assignment components + Dashboard:
- * - /patients       → Screen 1: Patient Register & List
- * - /appointments   → Screen 2: Appointment Book & List
- * - /consultations  → Screen 3: Consultation Summary Form & History
+ * Includes:
+ * - /login : Authentication Screen
+ * - /dashboard, /patients, /appointments, /consultations : Protected by authGuard
  */
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent, title: 'Dashboard — EquiCare OPD' },
-  { path: 'patients', component: PatientsComponent, title: 'Patients — EquiCare OPD' },
-  { path: 'appointments', component: AppointmentsComponent, title: 'Appointments — EquiCare OPD' },
-  { path: 'consultations', component: ConsultationsComponent, title: 'Consultations — EquiCare OPD' },
+  { path: 'login', component: LoginComponent, title: 'Login — EquiCare OPD' },
+  { path: 'dashboard', component: DashboardComponent, title: 'Dashboard — EquiCare OPD', canActivate: [authGuard] },
+  { path: 'patients', component: PatientsComponent, title: 'Patients — EquiCare OPD', canActivate: [authGuard] },
+  { path: 'appointments', component: AppointmentsComponent, title: 'Appointments — EquiCare OPD', canActivate: [authGuard] },
+  { path: 'consultations', component: ConsultationsComponent, title: 'Consultations — EquiCare OPD', canActivate: [authGuard] },
   { path: '**', redirectTo: 'dashboard' }
 ];

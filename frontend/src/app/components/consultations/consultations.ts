@@ -29,9 +29,13 @@ export class ConsultationsComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   activeTab: 'form' | 'history' = 'form';
+  queueFilter: 'all' | 'today' = 'all';
+
   allAppointments: Appointment[] = [];
+  todayAppointments: Appointment[] = [];
   selectedAppointment: Appointment | null = null;
   existingConsultation: Consultation | null = null;
+  isLoadingQueue = true;
   isSaving = false;
   isMarkingComplete = false;
 
@@ -58,69 +62,101 @@ export class ConsultationsComponent implements OnInit {
     });
   }
 
+  get displayedQueue(): Appointment[] {
+    if (this.queueFilter === 'today') {
+      return this.todayAppointments;
+    }
+    return this.allAppointments;
+  }
+
   loadAppointmentsAndPatients(): void {
+    this.isLoadingQueue = true;
+
+    // 1. Load All Appointments
     this.appointmentService.getAllAppointments().subscribe({
       next: (data) => {
         this.allAppointments = data || [];
-        if (!this.selectedAppointment && data && data.length > 0) {
-          const pending = data.find(a => a.status === 'BOOKED');
-          if (pending) {
-            this.selectAppointment(pending);
-          } else {
-            this.selectAppointment(data[0]);
-          }
+        this.isLoadingQueue = false;
+
+        // Auto-select pending appointment if none selected
+        if (!this.selectedAppointment && this.allAppointments.length > 0) {
+          const pending = this.allAppointments.find(a => a.status === 'BOOKED');
+          this.selectAppointment(pending || this.allAppointments[0]);
         }
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error loading appointments', err)
+      error: (err) => {
+        console.error('Error loading all appointments', err);
+        this.isLoadingQueue = false;
+        this.cdr.detectChanges();
+      }
     });
 
+    // 2. Load Today's Appointments
+    this.appointmentService.getTodaysAppointments().subscribe({
+      next: (todayData) => {
+        this.todayAppointments = todayData || [];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error loading today appointments', err)
+    });
+
+    // 3. Load Patients for History
     this.patientService.getAllPatients().subscribe({
       next: (data) => {
         this.allPatients = data || [];
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error loading patients', err)
+      error: (err) => console.error('Error loading patients for history', err)
     });
   }
 
   selectAppointmentById(id: number): void {
     this.appointmentService.getAppointmentById(id).subscribe({
       next: (appt) => {
-        this.selectAppointment(appt);
+        if (appt) {
+          this.selectAppointment(appt);
+        }
       },
       error: (err) => console.error('Error fetching appointment by id', err)
     });
   }
 
   selectAppointment(appt: Appointment): void {
+    if (!appt) return;
     this.selectedAppointment = appt;
     this.existingConsultation = null;
 
-    if (appt && appt.id) {
+    if (appt.id) {
       this.consultationService.getByAppointment(appt.id).subscribe({
         next: (consultation) => {
-          this.existingConsultation = consultation;
-          if (consultation) {
+          this.existingConsultation = consultation || null;
+          if (consultation && consultation.bloodPressure) {
             this.consultationForm.patchValue({
               bloodPressure: consultation.bloodPressure,
               temperature: consultation.temperature,
               notes: consultation.notes
             });
+          } else {
+            this.resetFormDefaults();
           }
           this.cdr.detectChanges();
         },
         error: () => {
           this.existingConsultation = null;
-          this.consultationForm.reset({
-            bloodPressure: '120/80 mmHg',
-            temperature: 98.6,
-            notes: ''
-          });
+          this.resetFormDefaults();
           this.cdr.detectChanges();
         }
       });
     }
+  }
+
+  private resetFormDefaults(): void {
+    this.consultationForm.reset({
+      bloodPressure: '120/80 mmHg',
+      temperature: 98.6,
+      notes: ''
+    });
   }
 
   saveConsultation(andComplete = false): void {

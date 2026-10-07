@@ -43,7 +43,11 @@ public class AppointmentService {
 
         // Link the appointment to the patient
         appointment.setPatient(patient);
-        // Status is automatically set to BOOKED via @Builder.Default
+        
+        // Ensure status is initialized to BOOKED
+        if (appointment.getStatus() == null) {
+            appointment.setStatus(Appointment.AppointmentStatus.BOOKED);
+        }
 
         return appointmentRepository.save(appointment);
     }
