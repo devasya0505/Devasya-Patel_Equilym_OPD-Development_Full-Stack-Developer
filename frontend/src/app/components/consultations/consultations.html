@@ -36,11 +36,13 @@
             <p class="card-subtitle">Select a scheduled patient:</p>
           </div>
           <div class="queue-filter-pills">
+            @if (authService.userRole() === 'DOCTOR') {
+              <button class="filter-pill" [class.active]="queueFilter === 'my'" (click)="queueFilter = 'my'">
+                <i class="fa-solid fa-user-doctor mr-1"></i> My Patients
+              </button>
+            }
             <button class="filter-pill" [class.active]="queueFilter === 'all'" (click)="queueFilter = 'all'">
-              All ({{ allAppointments.length }})
-            </button>
-            <button class="filter-pill" [class.active]="queueFilter === 'today'" (click)="queueFilter = 'today'">
-              Today ({{ todayAppointments.length }})
+              All OPD ({{ allAppointments.length }})
             </button>
           </div>
         </div>

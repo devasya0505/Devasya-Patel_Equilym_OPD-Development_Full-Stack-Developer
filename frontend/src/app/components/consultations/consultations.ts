@@ -5,11 +5,15 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ConsultationService } from '../../services/consultation.service';
 import { AppointmentService } from '../../services/appointment.service';
 import { PatientService } from '../../services/patient.service';
+import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { Consultation, Appointment, Patient } from '../../models/opd.models';
 
 /**
  * ConsultationsComponent — Screen 3: Doctor Consultation Summary & Record Management.
+ * 
+ * Doctor Role-Aware Filtering:
+ * When a doctor is logged in (e.g. Dr. Anita Desai), defaults to showing her assigned patients.
  */
 @Component({
   selector: 'app-consultations',
@@ -22,6 +26,7 @@ export class ConsultationsComponent implements OnInit {
   private consultationService = inject(ConsultationService);
   private appointmentService = inject(AppointmentService);
   private patientService = inject(PatientService);
+  authService = inject(AuthService);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -29,7 +34,7 @@ export class ConsultationsComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   activeTab: 'form' | 'history' = 'form';
-  queueFilter: 'all' | 'today' = 'all';
+  queueFilter: 'my' | 'all' = 'my';
 
   allAppointments: Appointment[] = [];
   todayAppointments: Appointment[] = [];
@@ -52,6 +57,11 @@ export class ConsultationsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // If user is receptionist or admin, default to 'all'
+    if (this.authService.userRole() !== 'DOCTOR') {
+      this.queueFilter = 'all';
+    }
+
     this.loadAppointmentsAndPatients();
 
     this.route.queryParams.subscribe(params => {
@@ -63,8 +73,9 @@ export class ConsultationsComponent implements OnInit {
   }
 
   get displayedQueue(): Appointment[] {
-    if (this.queueFilter === 'today') {
-      return this.todayAppointments;
+    if (this.queueFilter === 'my' && this.authService.userRole() === 'DOCTOR') {
+      const docKeyword = this.authService.userName().toLowerCase().replace('dr.', '').trim();
+      return this.allAppointments.filter(a => a.doctorName && a.doctorName.toLowerCase().includes(docKeyword));
     }
     return this.allAppointments;
   }
@@ -79,9 +90,9 @@ export class ConsultationsComponent implements OnInit {
         this.isLoadingQueue = false;
 
         // Auto-select pending appointment if none selected
-        if (!this.selectedAppointment && this.allAppointments.length > 0) {
-          const pending = this.allAppointments.find(a => a.status === 'BOOKED');
-          this.selectAppointment(pending || this.allAppointments[0]);
+        if (!this.selectedAppointment && this.displayedQueue.length > 0) {
+          const pending = this.displayedQueue.find(a => a.status === 'BOOKED');
+          this.selectAppointment(pending || this.displayedQueue[0]);
         }
         this.cdr.detectChanges();
       },

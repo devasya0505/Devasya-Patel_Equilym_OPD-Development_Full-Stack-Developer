@@ -4,11 +4,16 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { ActivatedRoute, Router } from '@angular/router';
 import { AppointmentService } from '../../services/appointment.service';
 import { PatientService } from '../../services/patient.service';
+import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { Appointment, Patient } from '../../models/opd.models';
 
 /**
  * AppointmentsComponent — Screen 2: Appointment Booking and Schedule Listing.
+ * 
+ * Role-Aware Behavior:
+ * - When a Doctor is logged in (e.g. Dr. Anita Desai), new bookings automatically default to her profile.
+ * - When Receptionist/Admin is logged in, any doctor can be selected from the hospital roster.
  */
 @Component({
   selector: 'app-appointments',
@@ -20,6 +25,7 @@ import { Appointment, Patient } from '../../models/opd.models';
 export class AppointmentsComponent implements OnInit {
   private appointmentService = inject(AppointmentService);
   private patientService = inject(PatientService);
+  authService = inject(AuthService);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -42,9 +48,11 @@ export class AppointmentsComponent implements OnInit {
   isSubmitting = false;
   showBookModal = false;
 
+  isReferralMode = false;
+
   bookingForm: FormGroup = this.fb.group({
     patientId: [null, [Validators.required]],
-    doctorName: [this.doctorsList[0], [Validators.required]],
+    doctorName: [this.getDefaultDoctor(), [Validators.required]],
     appointmentDate: [this.getTodayDateString(), [Validators.required]],
     appointmentTime: ['10:00', [Validators.required]]
   });
@@ -57,10 +65,27 @@ export class AppointmentsComponent implements OnInit {
       if (params['patientId']) {
         const pId = Number(params['patientId']);
         this.bookingForm.patchValue({ patientId: pId });
-        this.showBookModal = true;
+        this.openBookModal();
         this.cdr.detectChanges();
       }
     });
+  }
+
+  getDefaultDoctor(): string {
+    const user = this.authService.currentUser();
+    if (user && user.role === 'DOCTOR') {
+      const match = this.doctorsList.find(d => d.toLowerCase().includes(user.name.toLowerCase().replace('dr.', '').trim()));
+      return match || this.doctorsList[0];
+    }
+    return this.doctorsList[0];
+  }
+
+  toggleReferral(enable: boolean): void {
+    this.isReferralMode = enable;
+    if (!enable) {
+      this.bookingForm.patchValue({ doctorName: this.getDefaultDoctor() });
+    }
+    this.cdr.detectChanges();
   }
 
   getTodayDateString(): string {
@@ -107,8 +132,9 @@ export class AppointmentsComponent implements OnInit {
   }
 
   openBookModal(): void {
+    this.isReferralMode = false;
     this.bookingForm.patchValue({
-      doctorName: this.doctorsList[0],
+      doctorName: this.getDefaultDoctor(),
       appointmentDate: this.getTodayDateString(),
       appointmentTime: '10:00'
     });
