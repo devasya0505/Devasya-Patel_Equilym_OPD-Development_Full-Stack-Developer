@@ -1,0 +1,41 @@
+<!-- Global Sticky Navbar -->
+<app-navbar></app-navbar>
+
+<!-- Main Router View Area -->
+<main class="main-content">
+  <router-outlet></router-outlet>
+</main>
+
+<!-- Global Toast Notification Banner -->
+<div class="toast-container">
+  @for (toast of (toasts$ | async); track toast.id) {
+    <div class="toast" [ngClass]="{
+      'toast-success': toast.type === 'success',
+      'toast-error': toast.type === 'error',
+      'toast-info': toast.type === 'info'
+    }">
+      <i class="fa-solid" [class]="{
+        'fa-circle-check': toast.type === 'success',
+        'fa-circle-exclamation': toast.type === 'error',
+        'fa-circle-info': toast.type === 'info'
+      }"></i>
+      <span>{{ toast.text }}</span>
+      <button class="toast-close" (click)="toastService.remove(toast.id)">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  }
+</div>
+
+<!-- Footer -->
+<footer class="app-footer">
+  <div class="container footer-content">
+    <div class="footer-left">
+      <span class="footer-brand">EquiCare OPD Module</span>
+      <span class="footer-tech">• Spring Boot 4 + JPA + MySQL + Angular</span>
+    </div>
+    <div class="footer-right">
+      <span>Placement Technical Demo Assessment</span>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,222 @@
+<div class="container appointments-page">
+
+  <!-- Header & Actions -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><i class="fa-solid fa-calendar-check text-cyan mr-2"></i> OPD Appointments & Queue</h1>
+      <p class="page-subtitle">Schedule outpatient appointments, track today's doctor queue, and trigger consultations.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openBookModal()">
+      <i class="fa-solid fa-calendar-plus"></i> Book New Appointment
+    </button>
+  </div>
+
+  <!-- Tabs Navigation & Summary Row -->
+  <div class="tabs-card glass-card">
+    <div class="tabs-nav">
+      <button class="tab-btn" 
+              [class.active]="activeTab === 'today'" 
+              (click)="activeTab = 'today'">
+        <i class="fa-solid fa-calendar-day"></i> Today's Queue
+        <span class="tab-count">{{ todayAppointments.length }}</span>
+      </button>
+      <button class="tab-btn" 
+              [class.active]="activeTab === 'all'" 
+              (click)="activeTab = 'all'">
+        <i class="fa-solid fa-list-check"></i> All Appointments
+        <span class="tab-count">{{ allAppointments.length }}</span>
+      </button>
+    </div>
+    <div class="refresh-action">
+      <button class="btn btn-secondary btn-sm" (click)="loadAppointments()">
+        <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="isLoading"></i> Refresh Schedule
+      </button>
+    </div>
+  </div>
+
+  <!-- Appointments Table Card -->
+  <div class="list-card glass-card">
+    
+    <!-- Active Tab Header -->
+    <div class="tab-header">
+      <h2 class="tab-title">
+        @if (activeTab === 'today') {
+          <span><i class="fa-solid fa-clock text-amber mr-2"></i> Today's Patient Schedule</span>
+        } @else {
+          <span><i class="fa-solid fa-calendar-days text-cyan mr-2"></i> All Scheduled Appointments</span>
+        }
+      </h2>
+    </div>
+
+    @if (isLoading) {
+      <div class="loading-state">
+        <i class="fa-solid fa-circle-notch fa-spin text-cyan fa-2x"></i>
+        <p class="mt-2">Loading appointment data...</p>
+      </div>
+    } @else {
+      @let currentList = activeTab === 'today' ? todayAppointments : allAppointments;
+
+      @if (currentList.length === 0) {
+        <div class="empty-state">
+          <i class="fa-solid fa-calendar-xmark empty-icon"></i>
+          <h3>No Appointments Found</h3>
+          <p>
+            @if (activeTab === 'today') {
+              There are no appointments scheduled for today.
+            } @else {
+              No appointment records exist in the system.
+            }
+          </p>
+          <button class="btn btn-primary btn-sm mt-2" (click)="openBookModal()">
+            <i class="fa-solid fa-plus"></i> Book Appointment Now
+          </button>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table class="opd-table">
+            <thead>
+              <tr>
+                <th>Appt ID</th>
+                <th>Date & Time</th>
+                <th>Patient Details</th>
+                <th>Doctor</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (app of currentList; track app.id) {
+                <tr>
+                  <td><span class="appt-id">#APP-{{ app.id }}</span></td>
+                  <td>
+                    <div class="datetime-cell">
+                      <span class="appt-time"><i class="fa-regular fa-clock text-cyan mr-1"></i> {{ app.appointmentTime }}</span>
+                      <span class="appt-date text-muted">{{ app.appointmentDate | date:'mediumDate' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="patient-info">
+                      <strong class="patient-name">{{ app.patient.name }}</strong>
+                      <div class="patient-sub">
+                        <span class="badge" [ngClass]="{
+                          'badge-male': app.patient.gender === 'MALE',
+                          'badge-female': app.patient.gender === 'FEMALE',
+                          'badge-other': app.patient.gender === 'OTHER'
+                        }">{{ app.patient.gender }}</span>
+                        <span>{{ app.patient.age }}y</span>
+                        <span class="text-dim">•</span>
+                        <span><i class="fa-solid fa-phone text-muted mr-1"></i>{{ app.patient.phone }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="doctor-cell">
+                      <i class="fa-solid fa-user-doctor text-cyan"></i>
+                      <span>{{ app.doctorName }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="app.status === 'COMPLETED' ? 'badge-completed' : 'badge-booked'">
+                      <i class="fa-solid" [class]="app.status === 'COMPLETED' ? 'fa-check' : 'fa-hourglass-start'"></i>
+                      {{ app.status }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    @if (app.status === 'BOOKED') {
+                      <button class="btn btn-primary btn-sm" (click)="startConsultation(app)">
+                        <i class="fa-solid fa-stethoscope"></i> Start Consultation
+                      </button>
+                    } @else {
+                      <button class="btn btn-secondary btn-sm" (click)="startConsultation(app)">
+                        <i class="fa-solid fa-eye text-emerald"></i> View Consultation
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+
+  </div>
+
+  <!-- BOOK APPOINTMENT MODAL -->
+  @if (showBookModal) {
+    <div class="modal-overlay" (click)="closeBookModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        
+        <div class="modal-header">
+          <h2 class="modal-title"><i class="fa-solid fa-calendar-plus text-cyan mr-2"></i> Book OPD Appointment</h2>
+          <button class="modal-close" (click)="closeBookModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <form [formGroup]="bookingForm" (ngSubmit)="submitBooking()">
+          
+          <!-- Select Patient -->
+          <div class="form-group">
+            <label class="form-label">Select Patient *</label>
+            <select class="form-control" formControlName="patientId">
+              <option [ngValue]="null" disabled>-- Choose a registered patient --</option>
+              @for (p of patients; track p.id) {
+                <option [value]="p.id">
+                  {{ p.name }} ({{ p.gender }}, {{ p.age }} yrs) — Phone: {{ p.phone }}
+                </option>
+              }
+            </select>
+            @if (bookingForm.get('patientId')?.touched && bookingForm.get('patientId')?.invalid) {
+              <span class="error-text">Please select a patient.</span>
+            }
+          </div>
+
+          <!-- Select Doctor -->
+          <div class="form-group">
+            <label class="form-label">Consulting Doctor *</label>
+            <select class="form-control" formControlName="doctorName">
+              @for (doc of doctorsList; track doc) {
+                <option [value]="doc">{{ doc }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Date & Time Row -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label class="form-label">Appointment Date *</label>
+              <input type="date" class="form-control" formControlName="appointmentDate">
+              @if (bookingForm.get('appointmentDate')?.touched && bookingForm.get('appointmentDate')?.invalid) {
+                <span class="error-text">Date is required.</span>
+              }
+            </div>
+
+            <div class="form-group flex-1">
+              <label class="form-label">Time Slot *</label>
+              <input type="time" class="form-control" formControlName="appointmentTime">
+              @if (bookingForm.get('appointmentTime')?.touched && bookingForm.get('appointmentTime')?.invalid) {
+                <span class="error-text">Time is required.</span>
+              }
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeBookModal()">Cancel</button>
+            <button type="submit" class="btn btn-success" [disabled]="isSubmitting">
+              @if (isSubmitting) {
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Booking...
+              } @else {
+                <i class="fa-solid fa-check"></i> Confirm Appointment
+              }
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  }
+
+</div>

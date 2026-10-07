@@ -1,0 +1,275 @@
+<div class="container patients-page">
+
+  <!-- Header & Actions Bar -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><i class="fa-solid fa-users text-cyan mr-2"></i> Patient Directory</h1>
+      <p class="page-subtitle">Register new OPD patients, search by name or contact number, and view consultation records.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="fa-solid fa-user-plus"></i> Register New Patient
+    </button>
+  </div>
+
+  <!-- Search & Filter Card -->
+  <div class="search-card glass-card">
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input type="text" 
+             class="search-input" 
+             placeholder="Search patients by name or phone number (e.g., 'Priya' or '9876')..." 
+             [(ngModel)]="searchKeyword" 
+             (input)="onSearchChange()">
+      @if (searchKeyword) {
+        <button class="clear-btn" (click)="searchKeyword = ''; loadPatients()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      }
+    </div>
+    <div class="result-badge">
+      <span>{{ patients.length }} Patient{{ patients.length === 1 ? '' : 's' }} Found</span>
+    </div>
+  </div>
+
+  <!-- Patient List Table Card -->
+  <div class="list-card glass-card">
+    @if (isLoading) {
+      <div class="loading-state">
+        <i class="fa-solid fa-circle-notch fa-spin text-cyan fa-2x"></i>
+        <p class="mt-2">Searching patient records...</p>
+      </div>
+    } @else if (patients.length === 0) {
+      <div class="empty-state">
+        <i class="fa-solid fa-user-slash empty-icon"></i>
+        <h3>No Patients Found</h3>
+        <p>No records match your search criteria. Try a different query or register a new patient.</p>
+        <button class="btn btn-primary btn-sm mt-2" (click)="openAddModal()">
+          <i class="fa-solid fa-plus"></i> Register Patient
+        </button>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="opd-table">
+          <thead>
+            <tr>
+              <th>Patient ID</th>
+              <th>Full Name</th>
+              <th>Gender</th>
+              <th>Age</th>
+              <th>Phone Number</th>
+              <th>Registered On</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of patients; track p.id) {
+              <tr>
+                <td><span class="pid-badge">#PID-{{ p.id }}</span></td>
+                <td>
+                  <div class="name-cell">
+                    <div class="avatar-sm">
+                      <i class="fa-solid fa-user"></i>
+                    </div>
+                    <strong>{{ p.name }}</strong>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="{
+                    'badge-male': p.gender === 'MALE',
+                    'badge-female': p.gender === 'FEMALE',
+                    'badge-other': p.gender === 'OTHER'
+                  }">{{ p.gender }}</span>
+                </td>
+                <td>{{ p.age }} yrs</td>
+                <td>
+                  <i class="fa-solid fa-phone text-muted mr-1"></i> {{ p.phone }}
+                </td>
+                <td><span class="text-muted">{{ p.createdAt ? (p.createdAt | date:'mediumDate') : 'Today' }}</span></td>
+                <td class="text-right action-cell">
+                  <button class="btn btn-secondary btn-sm mr-2" 
+                          (click)="viewPatientHistory(p)" 
+                          title="View Past Consultations">
+                    <i class="fa-solid fa-file-medical text-cyan"></i> History
+                  </button>
+                  <button class="btn btn-success btn-sm" 
+                          (click)="bookAppointmentFor(p)"
+                          title="Schedule an Appointment">
+                    <i class="fa-solid fa-calendar-plus"></i> Book
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- MODAL 1: Add Patient Modal -->
+  @if (showAddModal) {
+    <div class="modal-overlay" (click)="closeAddModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        
+        <div class="modal-header">
+          <h2 class="modal-title"><i class="fa-solid fa-user-plus text-cyan mr-2"></i> Register New Patient</h2>
+          <button class="modal-close" (click)="closeAddModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <form [formGroup]="patientForm" (ngSubmit)="submitPatient()">
+          
+          <!-- Full Name -->
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" 
+                   class="form-control" 
+                   formControlName="name" 
+                   placeholder="e.g. Rajesh Sharma">
+            @if (patientForm.get('name')?.touched && patientForm.get('name')?.invalid) {
+              <span class="error-text">Patient name is required (max 100 characters).</span>
+            }
+          </div>
+
+          <div class="form-row">
+            <!-- Gender -->
+            <div class="form-group flex-1">
+              <label class="form-label">Gender *</label>
+              <select class="form-control" formControlName="gender">
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+
+            <!-- Age -->
+            <div class="form-group flex-1">
+              <label class="form-label">Age (Years) *</label>
+              <input type="number" 
+                     class="form-control" 
+                     formControlName="age" 
+                     placeholder="e.g. 32"
+                     min="0" max="150">
+              @if (patientForm.get('age')?.touched && patientForm.get('age')?.invalid) {
+                <span class="error-text">Valid age (0–150) is required.</span>
+              }
+            </div>
+          </div>
+
+          <!-- Phone Number -->
+          <div class="form-group">
+            <label class="form-label">Phone Number *</label>
+            <input type="tel" 
+                   class="form-control" 
+                   formControlName="phone" 
+                   placeholder="10-digit mobile number, e.g. 9876543210">
+            @if (patientForm.get('phone')?.touched && patientForm.get('phone')?.invalid) {
+              <span class="error-text">Please enter a valid 10 to 15 digit phone number.</span>
+            }
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+              @if (isSubmitting) {
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Registering...
+              } @else {
+                <i class="fa-solid fa-check"></i> Register Patient
+              }
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 2: Patient Consultation History Modal -->
+  @if (showHistoryModal) {
+    <div class="modal-overlay" (click)="closeHistoryModal()">
+      <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+        
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title">
+              <i class="fa-solid fa-notes-medical text-cyan mr-2"></i> Medical History
+            </h2>
+            <p class="patient-history-header">
+              Patient: <strong>{{ selectedPatient?.name }}</strong> | 
+              Age: <strong>{{ selectedPatient?.age }}</strong> | 
+              Phone: <strong>{{ selectedPatient?.phone }}</strong>
+            </p>
+          </div>
+          <button class="modal-close" (click)="closeHistoryModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        @if (isLoadingHistory) {
+          <div class="loading-state">
+            <i class="fa-solid fa-circle-notch fa-spin text-cyan fa-2x"></i>
+            <p class="mt-2">Loading medical history records...</p>
+          </div>
+        } @else if (patientConsultations.length === 0) {
+          <div class="empty-state">
+            <i class="fa-solid fa-clipboard empty-icon"></i>
+            <h3>No Completed Consultations</h3>
+            <p>This patient has not completed any doctor consultations yet.</p>
+            @if (selectedPatient) {
+              <button class="btn btn-primary btn-sm mt-2" (click)="closeHistoryModal(); bookAppointmentFor(selectedPatient)">
+                <i class="fa-solid fa-calendar-plus"></i> Schedule Appointment
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="history-timeline">
+            @for (c of patientConsultations; track c.id) {
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="history-card">
+                  <div class="history-card-header">
+                    <div>
+                      <span class="doctor-badge-text">
+                        <i class="fa-solid fa-user-doctor text-cyan"></i> {{ c.appointment.doctorName }}
+                      </span>
+                      <span class="appointment-date text-muted">
+                        • {{ c.appointment.appointmentDate | date:'mediumDate' }} at {{ c.appointment.appointmentTime }}
+                      </span>
+                    </div>
+                    <span class="badge badge-completed"><i class="fa-solid fa-check"></i> Completed</span>
+                  </div>
+
+                  <!-- Vitals Display -->
+                  <div class="vitals-row">
+                    <div class="vital-pill">
+                      <i class="fa-solid fa-heart-pulse text-rose"></i>
+                      <span>BP: <strong>{{ c.bloodPressure }}</strong></span>
+                    </div>
+                    <div class="vital-pill">
+                      <i class="fa-solid fa-temperature-half text-amber"></i>
+                      <span>Temp: <strong>{{ c.temperature }} °F</strong></span>
+                    </div>
+                  </div>
+
+                  <!-- Notes -->
+                  <div class="notes-box">
+                    <label class="notes-label"><i class="fa-solid fa-stethoscope"></i> Doctor Notes & Prescription:</label>
+                    <p class="notes-text">{{ c.notes || 'No detailed notes provided.' }}</p>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="modal-actions mt-3">
+          <button class="btn btn-secondary" (click)="closeHistoryModal()">Close</button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

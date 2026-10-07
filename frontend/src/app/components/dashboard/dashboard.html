@@ -1,0 +1,164 @@
+<div class="container dashboard-container">
+
+  <!-- Welcome Hero Section -->
+  <div class="hero-card glass-card">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="fa-solid fa-hospital"></i> Live OPD Operations
+      </div>
+      <h1 class="hero-title">Welcome to EquiCare OPD System</h1>
+      <p class="hero-subtitle">
+        Streamlined Outpatient Department workflow covering Patient Registration, Appointment Queue Management, and Doctor Clinical Consultations.
+      </p>
+      
+      <!-- Quick Action Buttons -->
+      <div class="hero-actions">
+        <a routerLink="/patients" class="btn btn-primary">
+          <i class="fa-solid fa-user-plus"></i> Register Patient
+        </a>
+        <a routerLink="/appointments" class="btn btn-success">
+          <i class="fa-solid fa-calendar-plus"></i> Book Appointment
+        </a>
+        <a routerLink="/consultations" class="btn btn-secondary">
+          <i class="fa-solid fa-stethoscope"></i> Consultation Room
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Performance Stats Grid -->
+  <div class="stats-grid">
+    
+    <div class="stat-card glass-card">
+      <div class="stat-icon icon-blue">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div class="stat-data">
+        <span class="stat-label">Total Registered</span>
+        <h2 class="stat-value">{{ stats.totalPatients }}</h2>
+        <span class="stat-trend"><i class="fa-solid fa-check"></i> In OPD Database</span>
+      </div>
+    </div>
+
+    <div class="stat-card glass-card">
+      <div class="stat-icon icon-amber">
+        <i class="fa-solid fa-calendar-day"></i>
+      </div>
+      <div class="stat-data">
+        <span class="stat-label">Today's Appointments</span>
+        <h2 class="stat-value">{{ stats.todayTotal }}</h2>
+        <span class="stat-trend"><i class="fa-solid fa-clock"></i> Active Schedule</span>
+      </div>
+    </div>
+
+    <div class="stat-card glass-card">
+      <div class="stat-icon icon-cyan">
+        <i class="fa-solid fa-hourglass-half"></i>
+      </div>
+      <div class="stat-data">
+        <span class="stat-label">Pending Queue</span>
+        <h2 class="stat-value">{{ stats.todayPending }}</h2>
+        <span class="stat-trend"><i class="fa-solid fa-circle-dot"></i> Awaiting Doctor</span>
+      </div>
+    </div>
+
+    <div class="stat-card glass-card">
+      <div class="stat-icon icon-emerald">
+        <i class="fa-solid fa-clipboard-check"></i>
+      </div>
+      <div class="stat-data">
+        <span class="stat-label">Consultations Done</span>
+        <h2 class="stat-value">{{ stats.todayCompleted }}</h2>
+        <span class="stat-trend"><i class="fa-solid fa-check-double"></i> Completed Today</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Today's Queue Section -->
+  <div class="today-section glass-card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Today's OPD Queue</h2>
+        <p class="section-subtitle">Real-time patient appointments scheduled for today</p>
+      </div>
+      <a routerLink="/appointments" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-arrow-right"></i> View Full Schedule
+      </a>
+    </div>
+
+    @if (isLoading) {
+      <div class="loading-state">
+        <i class="fa-solid fa-circle-notch fa-spin"></i> Loading schedule...
+      </div>
+    } @else if (todayAppointments.length === 0) {
+      <div class="empty-state">
+        <i class="fa-solid fa-calendar-xmark empty-icon"></i>
+        <h3>No Appointments Today</h3>
+        <p>Book a patient appointment to get started.</p>
+        <a routerLink="/appointments" class="btn btn-primary btn-sm mt-2">
+          <i class="fa-solid fa-plus"></i> Book First Appointment
+        </a>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="opd-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Patient Name</th>
+              <th>Gender / Age</th>
+              <th>Phone</th>
+              <th>Doctor</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (app of todayAppointments; track app.id) {
+              <tr>
+                <td><strong>{{ app.appointmentTime }}</strong></td>
+                <td>
+                  <div class="patient-cell">
+                    <span class="patient-name">{{ app.patient.name }}</span>
+                    <span class="patient-id">#PID-{{ app.patient.id }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="{
+                    'badge-male': app.patient.gender === 'MALE',
+                    'badge-female': app.patient.gender === 'FEMALE',
+                    'badge-other': app.patient.gender === 'OTHER'
+                  }">{{ app.patient.gender }}</span>
+                  <span class="age-text">{{ app.patient.age }} yrs</span>
+                </td>
+                <td>{{ app.patient.phone }}</td>
+                <td><i class="fa-solid fa-user-doctor text-cyan mr-1"></i> {{ app.doctorName }}</td>
+                <td>
+                  <span class="badge" [ngClass]="app.status === 'COMPLETED' ? 'badge-completed' : 'badge-booked'">
+                    <i class="fa-solid" [class]="app.status === 'COMPLETED' ? 'fa-check-circle' : 'fa-clock'"></i>
+                    {{ app.status }}
+                  </span>
+                </td>
+                <td>
+                  @if (app.status === 'BOOKED') {
+                    <a [routerLink]="['/consultations']" 
+                       [queryParams]="{ appointmentId: app.id }" 
+                       class="btn btn-primary btn-sm">
+                      <i class="fa-solid fa-stethoscope"></i> Consult
+                    </a>
+                  } @else {
+                    <span class="text-emerald font-bold text-sm">
+                      <i class="fa-solid fa-circle-check"></i> Done
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>

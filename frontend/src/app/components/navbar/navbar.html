@@ -1,0 +1,55 @@
+<header class="app-header">
+  <div class="container header-content">
+    
+    <!-- Brand Logo -->
+    <a routerLink="/dashboard" class="brand">
+      <div class="brand-icon">
+        <i class="fa-solid fa-heart-pulse"></i>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">EquiCare<span class="brand-badge">OPD</span></span>
+        <span class="brand-subtitle">Clinical Outpatient System</span>
+      </div>
+    </a>
+
+    <!-- Navigation Links -->
+    <nav class="nav-links">
+      @for (item of navItems; track item.route) {
+        <a [routerLink]="item.route" 
+           routerLinkActive="active" 
+           class="nav-item">
+          <i class="fa-solid" [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <!-- Header Actions: Theme Toggle & Doctor Badge -->
+    <div class="header-actions">
+      
+      <!-- Theme Switcher Button -->
+      <button class="btn-theme" 
+              (click)="toggleTheme()" 
+              [title]="themeService.isDark() ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+        @if (themeService.isDark()) {
+          <i class="fa-solid fa-sun text-amber"></i>
+        } @else {
+          <i class="fa-solid fa-moon text-cyan"></i>
+        }
+      </button>
+
+      <!-- Doctor Badge -->
+      <div class="doctor-badge">
+        <div class="avatar">
+          <i class="fa-solid fa-user-md"></i>
+        </div>
+        <div class="doctor-info">
+          <span class="doc-name">Dr. Anita Desai</span>
+          <span class="doc-role">OPD Duty Doctor</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</header>

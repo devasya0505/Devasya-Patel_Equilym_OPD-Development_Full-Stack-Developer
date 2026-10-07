@@ -1,0 +1,280 @@
+<div class="container consultations-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><i class="fa-solid fa-user-doctor text-cyan mr-2"></i> Doctor Consultation Room</h1>
+      <p class="page-subtitle">Record clinical vitals, prescribe treatment notes, mark consultations complete, and review patient histories.</p>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs-card glass-card">
+    <div class="tabs-nav">
+      <button class="tab-btn" 
+              [class.active]="activeTab === 'form'" 
+              (click)="activeTab = 'form'">
+        <i class="fa-solid fa-stethoscope"></i> Active Consultation Form
+      </button>
+      <button class="tab-btn" 
+              [class.active]="activeTab === 'history'" 
+              (click)="activeTab = 'history'">
+        <i class="fa-solid fa-book-medical"></i> Patient Consultation Records
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: CONSULTATION ENTRY FORM -->
+  @if (activeTab === 'form') {
+    <div class="consultation-grid">
+      
+      <!-- Left Column: Patient & Appointment Selection -->
+      <div class="appointment-picker glass-card">
+        <h2 class="card-title"><i class="fa-solid fa-list-check text-cyan mr-2"></i> Select Appointment Queue</h2>
+        <p class="card-subtitle">Choose a scheduled patient from today's list:</p>
+
+        <div class="appointment-list">
+          @for (app of allAppointments; track app.id) {
+            <div class="appt-item" 
+                 [class.selected]="selectedAppointment?.id === app.id"
+                 (click)="selectAppointment(app)">
+              
+              <div class="appt-item-header">
+                <span class="patient-title">{{ app.patient.name }}</span>
+                <span class="badge" [ngClass]="app.status === 'COMPLETED' ? 'badge-completed' : 'badge-booked'">
+                  {{ app.status }}
+                </span>
+              </div>
+
+              <div class="appt-item-body">
+                <span><i class="fa-regular fa-clock text-cyan"></i> {{ app.appointmentTime }}</span>
+                <span><i class="fa-solid fa-phone text-muted"></i> {{ app.patient.phone }}</span>
+              </div>
+
+              <div class="appt-item-footer">
+                <span>{{ app.patient.gender }}, {{ app.patient.age }} yrs</span>
+                <span class="doctor-tag">{{ app.doctorName.split(' ')[0] }} {{ app.doctorName.split(' ')[1] }}</span>
+              </div>
+
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Right Column: Clinical Consultation Form -->
+      <div class="consultation-form-card glass-card">
+        
+        @if (!selectedAppointment) {
+          <div class="empty-state">
+            <i class="fa-solid fa-user-doctor empty-icon"></i>
+            <h3>No Appointment Selected</h3>
+            <p>Please choose an appointment from the left queue to begin consultation.</p>
+          </div>
+        } @else {
+          
+          <!-- Patient Summary Banner -->
+          <div class="patient-banner">
+            <div class="avatar-lg">
+              <i class="fa-solid fa-user-injured"></i>
+            </div>
+            <div class="patient-details">
+              <div class="patient-title-row">
+                <h3>{{ selectedAppointment.patient.name }}</h3>
+                <span class="pid-tag">#PID-{{ selectedAppointment.patient.id }}</span>
+                <span class="badge" [ngClass]="selectedAppointment.status === 'COMPLETED' ? 'badge-completed' : 'badge-booked'">
+                  {{ selectedAppointment.status }}
+                </span>
+              </div>
+              <div class="patient-meta-row">
+                <span><strong>Gender:</strong> {{ selectedAppointment.patient.gender }}</span>
+                <span>•</span>
+                <span><strong>Age:</strong> {{ selectedAppointment.patient.age }} Years</span>
+                <span>•</span>
+                <span><strong>Phone:</strong> {{ selectedAppointment.patient.phone }}</span>
+                <span>•</span>
+                <span><strong>Doctor:</strong> {{ selectedAppointment.doctorName }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Consultation Status Notice if already completed -->
+          @if (existingConsultation?.isCompleted) {
+            <div class="status-alert alert-completed">
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <strong>Consultation Completed & Closed</strong>
+                <p>This consultation was finalized on {{ existingConsultation?.consultedAt | date:'medium' }}.</p>
+              </div>
+            </div>
+          }
+
+          <form [formGroup]="consultationForm" (ngSubmit)="saveConsultation(false)">
+
+            <!-- Section 1: Vitals (2 Fields as required) -->
+            <div class="form-section">
+              <h4 class="section-heading">
+                <i class="fa-solid fa-heart-pulse text-rose mr-2"></i> Patient Vitals (Required)
+              </h4>
+              
+              <div class="form-row">
+                <!-- Vital 1: Blood Pressure -->
+                <div class="form-group flex-1">
+                  <label class="form-label">
+                    <i class="fa-solid fa-gauge-high text-rose mr-1"></i> Blood Pressure (mmHg) *
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="bloodPressure" 
+                         placeholder="e.g. 120/80 mmHg"
+                         [readonly]="existingConsultation?.isCompleted">
+                  @if (consultationForm.get('bloodPressure')?.touched && consultationForm.get('bloodPressure')?.invalid) {
+                    <span class="error-text">Blood pressure reading is required.</span>
+                  }
+                </div>
+
+                <!-- Vital 2: Body Temperature -->
+                <div class="form-group flex-1">
+                  <label class="form-label">
+                    <i class="fa-solid fa-temperature-half text-amber mr-1"></i> Body Temperature (°F) *
+                  </label>
+                  <input type="number" 
+                         step="0.1" 
+                         class="form-control" 
+                         formControlName="temperature" 
+                         placeholder="e.g. 98.6"
+                         [readonly]="existingConsultation?.isCompleted">
+                  @if (consultationForm.get('temperature')?.touched && consultationForm.get('temperature')?.invalid) {
+                    <span class="error-text">Valid body temperature (90°F - 110°F) is required.</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2: Clinical Notes & Prescription -->
+            <div class="form-section">
+              <h4 class="section-heading">
+                <i class="fa-solid fa-file-waveform text-cyan mr-2"></i> Clinical Notes & Prescription *
+              </h4>
+              
+              <div class="form-group">
+                <textarea class="form-control clinical-textarea" 
+                          rows="5"
+                          formControlName="notes"
+                          placeholder="Enter patient symptoms, diagnosis findings, prescribed medicines, and follow-up advice..."
+                          [readonly]="existingConsultation?.isCompleted"></textarea>
+                @if (consultationForm.get('notes')?.touched && consultationForm.get('notes')?.invalid) {
+                  <span class="error-text">Clinical notes are required (min 5 characters).</span>
+                }
+              </div>
+            </div>
+
+            <!-- Form Action Buttons -->
+            @if (!existingConsultation?.isCompleted) {
+              <div class="form-actions-bar">
+                <button type="submit" class="btn btn-secondary" [disabled]="isSaving">
+                  <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                </button>
+
+                <button type="button" 
+                        class="btn btn-success" 
+                        (click)="saveConsultation(true)" 
+                        [disabled]="isSaving || isMarkingComplete">
+                  @if (isMarkingComplete) {
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Finalizing...
+                  } @else {
+                    <i class="fa-solid fa-circle-check"></i> Complete & Close Consultation
+                  }
+                </button>
+              </div>
+            }
+
+          </form>
+
+        }
+
+      </div>
+
+    </div>
+  }
+
+  <!-- TAB 2: PATIENT CONSULTATION HISTORY -->
+  @if (activeTab === 'history') {
+    <div class="history-tab-content glass-card">
+      
+      <div class="history-filter-bar">
+        <div class="filter-group">
+          <label class="form-label"><i class="fa-solid fa-user mr-1"></i> Select Patient to View History:</label>
+          <select class="form-control" [(ngModel)]="historyPatientId" (change)="onHistoryPatientChange()">
+            <option [ngValue]="null" disabled>-- Choose a patient --</option>
+            @for (p of allPatients; track p.id) {
+              <option [value]="p.id">
+                #PID-{{ p.id }} — {{ p.name }} ({{ p.gender }}, {{ p.age }} yrs) — Phone: {{ p.phone }}
+              </option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @if (isLoadingHistory) {
+        <div class="loading-state">
+          <i class="fa-solid fa-circle-notch fa-spin text-cyan fa-2x"></i>
+          <p class="mt-2">Fetching patient consultation records...</p>
+        </div>
+      } @else if (!historyPatientId) {
+        <div class="empty-state">
+          <i class="fa-solid fa-folder-open empty-icon"></i>
+          <h3>Select a Patient</h3>
+          <p>Choose any registered patient from the dropdown above to view their complete consultation timeline.</p>
+        </div>
+      } @else if (patientHistoryConsultations.length === 0) {
+        <div class="empty-state">
+          <i class="fa-solid fa-clipboard-question empty-icon"></i>
+          <h3>No Completed Consultations</h3>
+          <p>No completed consultation records found for <strong>{{ selectedHistoryPatient?.name }}</strong>.</p>
+        </div>
+      } @else {
+        <div class="history-grid">
+          @for (c of patientHistoryConsultations; track c.id) {
+            <div class="consultation-record-card">
+              
+              <div class="record-header">
+                <div>
+                  <h3 class="record-doctor">
+                    <i class="fa-solid fa-user-doctor text-cyan mr-1"></i> {{ c.appointment.doctorName }}
+                  </h3>
+                  <span class="record-date text-muted">
+                    <i class="fa-regular fa-calendar mr-1"></i> {{ c.appointment.appointmentDate | date:'mediumDate' }} at {{ c.appointment.appointmentTime }}
+                  </span>
+                </div>
+                <span class="badge badge-completed"><i class="fa-solid fa-check"></i> Completed</span>
+              </div>
+
+              <div class="vitals-row">
+                <div class="vital-pill">
+                  <i class="fa-solid fa-heart-pulse text-rose"></i>
+                  <span>BP: <strong>{{ c.bloodPressure }}</strong></span>
+                </div>
+                <div class="vital-pill">
+                  <i class="fa-solid fa-temperature-half text-amber"></i>
+                  <span>Temp: <strong>{{ c.temperature }} °F</strong></span>
+                </div>
+              </div>
+
+              <div class="notes-box">
+                <label class="notes-label"><i class="fa-solid fa-prescription"></i> Doctor's Clinical Notes:</label>
+                <p class="notes-text">{{ c.notes }}</p>
+              </div>
+
+              <div class="record-footer text-dim text-sm">
+                <span>Consulted on: {{ c.consultedAt | date:'medium' }}</span>
+              </div>
+
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+  }
+
+</div>

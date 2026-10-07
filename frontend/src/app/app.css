@@ -1,0 +1,39 @@
+.main-content {
+  min-height: calc(100vh - 72px - 60px);
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0 0.25rem;
+}
+
+.toast-close:hover {
+  color: #ffffff;
+}
+
+.app-footer {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-nav);
+  padding: 1.25rem 0;
+  margin-top: 2rem;
+  transition: background-color 0.25s ease;
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.footer-brand {
+  font-weight: 700;
+  color: var(--text-main);
+}
