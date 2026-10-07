@@ -48,11 +48,9 @@ export class AppointmentsComponent implements OnInit {
   isSubmitting = false;
   showBookModal = false;
 
-  isReferralMode = false;
-
   bookingForm: FormGroup = this.fb.group({
     patientId: [null, [Validators.required]],
-    doctorName: [this.getDefaultDoctor(), [Validators.required]],
+    doctorName: [this.doctorsList[0], [Validators.required]],
     appointmentDate: [this.getTodayDateString(), [Validators.required]],
     appointmentTime: ['10:00', [Validators.required]]
   });
@@ -69,23 +67,6 @@ export class AppointmentsComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
-  }
-
-  getDefaultDoctor(): string {
-    const user = this.authService.currentUser();
-    if (user && user.role === 'DOCTOR') {
-      const match = this.doctorsList.find(d => d.toLowerCase().includes(user.name.toLowerCase().replace('dr.', '').trim()));
-      return match || this.doctorsList[0];
-    }
-    return this.doctorsList[0];
-  }
-
-  toggleReferral(enable: boolean): void {
-    this.isReferralMode = enable;
-    if (!enable) {
-      this.bookingForm.patchValue({ doctorName: this.getDefaultDoctor() });
-    }
-    this.cdr.detectChanges();
   }
 
   getTodayDateString(): string {
@@ -132,9 +113,8 @@ export class AppointmentsComponent implements OnInit {
   }
 
   openBookModal(): void {
-    this.isReferralMode = false;
     this.bookingForm.patchValue({
-      doctorName: this.getDefaultDoctor(),
+      doctorName: this.doctorsList[0],
       appointmentDate: this.getTodayDateString(),
       appointmentTime: '10:00'
     });

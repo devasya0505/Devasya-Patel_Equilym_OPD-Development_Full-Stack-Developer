@@ -174,45 +174,12 @@
 
           <!-- Select Doctor -->
           <div class="form-group">
-            <div class="label-with-tag">
-              <label class="form-label">Consulting Doctor *</label>
-              @if (authService.userRole() === 'DOCTOR') {
-                <span class="role-hint-tag">
-                  <i class="fa-solid fa-user-doctor mr-1"></i>
-                  {{ isReferralMode ? 'Referral Mode' : 'Assigned to You (' + authService.userName() + ')' }}
-                </span>
+            <label class="form-label">Consulting Doctor *</label>
+            <select class="form-control" formControlName="doctorName">
+              @for (doc of doctorsList; track doc) {
+                <option [value]="doc">{{ doc }}</option>
               }
-            </div>
-
-            @if (authService.userRole() === 'DOCTOR') {
-              @if (!isReferralMode) {
-                <div class="doctor-locked-box">
-                  <i class="fa-solid fa-user-check text-cyan mr-2"></i>
-                  <strong>{{ bookingForm.get('doctorName')?.value }}</strong>
-                  <button type="button" class="btn-link-referral" (click)="toggleReferral(true)">
-                    <i class="fa-solid fa-arrow-right-arrow-left"></i> Refer to another Doctor?
-                  </button>
-                </div>
-              } @else {
-                <div class="referral-select-wrapper">
-                  <select class="form-control" formControlName="doctorName">
-                    @for (doc of doctorsList; track doc) {
-                      <option [value]="doc">{{ doc }}</option>
-                    }
-                  </select>
-                  <button type="button" class="btn-link-referral mt-1" (click)="toggleReferral(false)">
-                    <i class="fa-solid fa-rotate-left"></i> Reset to Myself ({{ authService.userName() }})
-                  </button>
-                </div>
-              }
-            } @else {
-              <!-- Receptionist / Admin can pick any doctor directly -->
-              <select class="form-control" formControlName="doctorName">
-                @for (doc of doctorsList; track doc) {
-                  <option [value]="doc">{{ doc }}</option>
-                }
-              </select>
-            }
+            </select>
           </div>
 
           <!-- Date & Time Row -->

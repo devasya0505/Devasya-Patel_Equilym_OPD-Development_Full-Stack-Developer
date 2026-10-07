@@ -34,7 +34,7 @@ export class ConsultationsComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   activeTab: 'form' | 'history' = 'form';
-  queueFilter: 'my' | 'all' = 'my';
+  queueFilter: 'today' | 'all' = 'today';
 
   allAppointments: Appointment[] = [];
   todayAppointments: Appointment[] = [];
@@ -57,11 +57,6 @@ export class ConsultationsComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    // If user is receptionist or admin, default to 'all'
-    if (this.authService.userRole() !== 'DOCTOR') {
-      this.queueFilter = 'all';
-    }
-
     this.loadAppointmentsAndPatients();
 
     this.route.queryParams.subscribe(params => {
@@ -73,11 +68,7 @@ export class ConsultationsComponent implements OnInit {
   }
 
   get displayedQueue(): Appointment[] {
-    if (this.queueFilter === 'my' && this.authService.userRole() === 'DOCTOR') {
-      const docKeyword = this.authService.userName().toLowerCase().replace('dr.', '').trim();
-      return this.allAppointments.filter(a => a.doctorName && a.doctorName.toLowerCase().includes(docKeyword));
-    }
-    return this.allAppointments;
+    return this.queueFilter === 'today' ? this.todayAppointments : this.allAppointments;
   }
 
   loadAppointmentsAndPatients(): void {
