@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PatientService } from '../../services/patient.service';
@@ -8,7 +8,7 @@ import { Patient, Appointment } from '../../models/opd.models';
 /**
  * DashboardComponent — Summary and quick-launch dashboard for the OPD module.
  * 
- * Implements OnInit lifecycle hook to fetch dashboard stats on component load.
+ * Uses ChangeDetectorRef to guarantee instant UI updates when HTTP responses arrive.
  */
 @Component({
   selector: 'app-dashboard',
@@ -20,6 +20,7 @@ import { Patient, Appointment } from '../../models/opd.models';
 export class DashboardComponent implements OnInit {
   private patientService = inject(PatientService);
   private appointmentService = inject(AppointmentService);
+  private cdr = inject(ChangeDetectorRef);
 
   // Dashboard state
   patients: Patient[] = [];
@@ -47,24 +48,30 @@ export class DashboardComponent implements OnInit {
     // Load patients count
     this.patientService.getAllPatients().subscribe({
       next: (data) => {
-        this.patients = data;
-        this.stats.totalPatients = data.length;
+        this.patients = data || [];
+        this.stats.totalPatients = this.patients.length;
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error loading patients', err)
+      error: (err) => {
+        console.error('Error loading patients', err);
+        this.cdr.detectChanges();
+      }
     });
 
     // Load today's appointments
     this.appointmentService.getTodaysAppointments().subscribe({
       next: (data) => {
-        this.todayAppointments = data;
-        this.stats.todayTotal = data.length;
-        this.stats.todayCompleted = data.filter(a => a.status === 'COMPLETED').length;
-        this.stats.todayPending = data.filter(a => a.status === 'BOOKED').length;
+        this.todayAppointments = data || [];
+        this.stats.todayTotal = this.todayAppointments.length;
+        this.stats.todayCompleted = this.todayAppointments.filter(a => a.status === 'COMPLETED').length;
+        this.stats.todayPending = this.todayAppointments.filter(a => a.status === 'BOOKED').length;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error loading today appointments', err);
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }

@@ -47,7 +47,7 @@ A complete, demo-ready **Outpatient Department (OPD) Management System** built w
 - MySQL running on port 3306 (e.g., XAMPP MySQL) with database `opd_db`
 
 ### Step 1: Start MySQL Database
-Ensure MySQL is running on `localhost:3306` with user `root` (empty password by default in XAMPP).
+Ensure MySQL is running on `localhost:3306` with user `root` and password `Devpatel@2005`.
 ```sql
 CREATE DATABASE IF NOT EXISTS opd_db;
 ```

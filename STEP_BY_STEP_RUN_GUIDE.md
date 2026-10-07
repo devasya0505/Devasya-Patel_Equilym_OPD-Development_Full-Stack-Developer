@@ -19,7 +19,7 @@ This guide gives you the exact commands to run from a clean terminal, along with
 ### Command:
 Open XAMPP Control Panel and click **Start** next to MySQL, or run via PowerShell:
 ```powershell
-mysql -u root -e "CREATE DATABASE IF NOT EXISTS opd_db; SHOW DATABASES;"
+mysql -u root -pDevpatel@2005 -e "CREATE DATABASE IF NOT EXISTS opd_db; SHOW DATABASES;"
 ```
 
 ### ✅ Expected Console Output:

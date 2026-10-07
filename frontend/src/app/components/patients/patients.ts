@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,12 +9,6 @@ import { Patient, Consultation } from '../../models/opd.models';
 
 /**
  * PatientsComponent — Screen 1: Patient Registration, Patient List, and Real-time Search.
- * 
- * Features:
- * 1. Reactive Form with client-side validation (Name, Gender, Age, Phone).
- * 2. Real-time search by Name OR Phone number.
- * 3. Quick modal to view medical history & past consultations for any patient.
- * 4. Direct navigation to Book Appointment for the selected patient.
  */
 @Component({
   selector: 'app-patients',
@@ -29,6 +23,7 @@ export class PatientsComponent implements OnInit {
   private toastService = inject(ToastService);
   private router = inject(Router);
   private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
   // State variables
   patients: Patient[] = [];
@@ -63,38 +58,36 @@ export class PatientsComponent implements OnInit {
     if (this.searchKeyword.trim()) {
       this.patientService.searchPatients(this.searchKeyword).subscribe({
         next: (data) => {
-          this.patients = data;
+          this.patients = data || [];
           this.isLoading = false;
+          this.cdr.detectChanges();
         },
         error: (err) => {
           this.toastService.error('Failed to search patients');
           this.isLoading = false;
+          this.cdr.detectChanges();
         }
       });
     } else {
       this.patientService.getAllPatients().subscribe({
         next: (data) => {
-          this.patients = data;
+          this.patients = data || [];
           this.isLoading = false;
+          this.cdr.detectChanges();
         },
         error: (err) => {
           this.toastService.error('Failed to load patient records');
           this.isLoading = false;
+          this.cdr.detectChanges();
         }
       });
     }
   }
 
-  /**
-   * Triggered on search input change.
-   */
   onSearchChange(): void {
     this.loadPatients();
   }
 
-  /**
-   * Open the Patient Registration Modal.
-   */
   openAddModal(): void {
     this.patientForm.reset({
       gender: 'MALE'
@@ -102,16 +95,10 @@ export class PatientsComponent implements OnInit {
     this.showAddModal = true;
   }
 
-  /**
-   * Close the Patient Registration Modal.
-   */
   closeAddModal(): void {
     this.showAddModal = false;
   }
 
-  /**
-   * Submit the Patient Registration Form to Spring Boot backend.
-   */
   submitPatient(): void {
     if (this.patientForm.invalid) {
       this.patientForm.markAllAsTouched();
@@ -133,13 +120,11 @@ export class PatientsComponent implements OnInit {
         const errorMsg = err.error?.message || 'Failed to register patient.';
         this.toastService.error(errorMsg);
         this.isSubmitting = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
-  /**
-   * View past completed consultations for a patient.
-   */
   viewPatientHistory(patient: Patient): void {
     this.selectedPatient = patient;
     this.showHistoryModal = true;
@@ -148,29 +133,25 @@ export class PatientsComponent implements OnInit {
     if (patient.id) {
       this.consultationService.getCompletedConsultations(patient.id).subscribe({
         next: (consultations) => {
-          this.patientConsultations = consultations;
+          this.patientConsultations = consultations || [];
           this.isLoadingHistory = false;
+          this.cdr.detectChanges();
         },
         error: (err) => {
           this.toastService.error('Failed to load patient history.');
           this.isLoadingHistory = false;
+          this.cdr.detectChanges();
         }
       });
     }
   }
 
-  /**
-   * Close the Patient Medical History Modal.
-   */
   closeHistoryModal(): void {
     this.showHistoryModal = false;
     this.selectedPatient = null;
     this.patientConsultations = [];
   }
 
-  /**
-   * Quick action: Navigate directly to book appointment with this patient pre-selected.
-   */
   bookAppointmentFor(patient: Patient): void {
     this.router.navigate(['/appointments'], {
       queryParams: { patientId: patient.id }

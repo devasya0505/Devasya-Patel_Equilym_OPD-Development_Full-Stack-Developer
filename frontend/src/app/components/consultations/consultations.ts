@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,12 +10,6 @@ import { Consultation, Appointment, Patient } from '../../models/opd.models';
 
 /**
  * ConsultationsComponent — Screen 3: Doctor Consultation Summary & Record Management.
- * 
- * Flow:
- * 1. Doctor selects an appointment (or arrives with ?appointmentId from queue).
- * 2. Enters 2 Vitals (Blood Pressure + Temperature) & Doctor's Clinical Notes.
- * 3. Saves consultation and marks as Complete.
- * 4. Tab 2 allows viewing all historical completed consultations for any patient.
  */
 @Component({
   selector: 'app-consultations',
@@ -32,25 +26,21 @@ export class ConsultationsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
-  // Tab state: 'form' (Live consultation entry) vs 'history' (Patient historical records)
   activeTab: 'form' | 'history' = 'form';
-
-  // Appointment & Consultation state
   allAppointments: Appointment[] = [];
   selectedAppointment: Appointment | null = null;
   existingConsultation: Consultation | null = null;
   isSaving = false;
   isMarkingComplete = false;
 
-  // History tab state
   allPatients: Patient[] = [];
   historyPatientId: number | null = null;
   selectedHistoryPatient: Patient | null = null;
   patientHistoryConsultations: Consultation[] = [];
   isLoadingHistory = false;
 
-  // Reactive Form for Consultation Entry
   consultationForm: FormGroup = this.fb.group({
     bloodPressure: ['120/80 mmHg', [Validators.required]],
     temperature: [98.6, [Validators.required, Validators.min(90), Validators.max(110)]],
@@ -60,7 +50,6 @@ export class ConsultationsComponent implements OnInit {
   ngOnInit(): void {
     this.loadAppointmentsAndPatients();
 
-    // Check if an appointment was specified via URL query params
     this.route.queryParams.subscribe(params => {
       if (params['appointmentId']) {
         const apptId = Number(params['appointmentId']);
@@ -69,16 +58,11 @@ export class ConsultationsComponent implements OnInit {
     });
   }
 
-  /**
-   * Load data needed for dropdown selectors.
-   */
   loadAppointmentsAndPatients(): void {
-    // Load all appointments
     this.appointmentService.getAllAppointments().subscribe({
       next: (data) => {
-        this.allAppointments = data;
-        // If no appointment is selected yet and we have appointments, select the first pending one
-        if (!this.selectedAppointment && data.length > 0) {
+        this.allAppointments = data || [];
+        if (!this.selectedAppointment && data && data.length > 0) {
           const pending = data.find(a => a.status === 'BOOKED');
           if (pending) {
             this.selectAppointment(pending);
@@ -86,22 +70,20 @@ export class ConsultationsComponent implements OnInit {
             this.selectAppointment(data[0]);
           }
         }
+        this.cdr.detectChanges();
       },
       error: (err) => console.error('Error loading appointments', err)
     });
 
-    // Load patients for history lookup
     this.patientService.getAllPatients().subscribe({
       next: (data) => {
-        this.allPatients = data;
+        this.allPatients = data || [];
+        this.cdr.detectChanges();
       },
       error: (err) => console.error('Error loading patients', err)
     });
   }
 
-  /**
-   * Select an appointment by its ID.
-   */
   selectAppointmentById(id: number): void {
     this.appointmentService.getAppointmentById(id).subscribe({
       next: (appt) => {
@@ -111,43 +93,36 @@ export class ConsultationsComponent implements OnInit {
     });
   }
 
-  /**
-   * Handler when doctor chooses an appointment to consult.
-   */
   selectAppointment(appt: Appointment): void {
     this.selectedAppointment = appt;
     this.existingConsultation = null;
 
-    // Check if consultation already exists for this appointment
-    if (appt.id) {
+    if (appt && appt.id) {
       this.consultationService.getByAppointment(appt.id).subscribe({
         next: (consultation) => {
           this.existingConsultation = consultation;
           if (consultation) {
-            // Populate form with saved data
             this.consultationForm.patchValue({
               bloodPressure: consultation.bloodPressure,
               temperature: consultation.temperature,
               notes: consultation.notes
             });
           }
+          this.cdr.detectChanges();
         },
         error: () => {
-          // No consultation created yet: reset to defaults
           this.existingConsultation = null;
           this.consultationForm.reset({
             bloodPressure: '120/80 mmHg',
             temperature: 98.6,
             notes: ''
           });
+          this.cdr.detectChanges();
         }
       });
     }
   }
 
-  /**
-   * Save doctor consultation (vitals + notes).
-   */
   saveConsultation(andComplete = false): void {
     if (!this.selectedAppointment || !this.selectedAppointment.id) {
       this.toastService.error('Please select an appointment first.');
@@ -170,18 +145,17 @@ export class ConsultationsComponent implements OnInit {
       isCompleted: andComplete
     };
 
-    // If consultation already exists, handle completion directly
     if (this.existingConsultation && this.existingConsultation.id) {
       if (andComplete) {
         this.markAsCompleted(this.existingConsultation.id);
       } else {
         this.toastService.info('Consultation record is already saved.');
         this.isSaving = false;
+        this.cdr.detectChanges();
       }
       return;
     }
 
-    // Create new consultation
     this.consultationService.createConsultation(payload, this.selectedAppointment.id).subscribe({
       next: (saved) => {
         this.existingConsultation = saved;
@@ -192,18 +166,17 @@ export class ConsultationsComponent implements OnInit {
         } else {
           this.toastService.success('Consultation draft saved successfully!');
         }
+        this.cdr.detectChanges();
       },
       error: (err) => {
         const msg = err.error?.message || 'Failed to save consultation.';
         this.toastService.error(msg);
         this.isSaving = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
-  /**
-   * Mark consultation as complete (triggers backend PUT /complete).
-   */
   markAsCompleted(consultationId: number): void {
     this.isMarkingComplete = true;
     this.consultationService.markComplete(consultationId).subscribe({
@@ -219,13 +192,11 @@ export class ConsultationsComponent implements OnInit {
       error: (err) => {
         this.toastService.error('Failed to mark consultation as complete.');
         this.isMarkingComplete = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
-  /**
-   * On Patient selection in History Tab, fetch completed consultations for that patient.
-   */
   onHistoryPatientChange(): void {
     if (!this.historyPatientId) {
       this.selectedHistoryPatient = null;
@@ -239,12 +210,14 @@ export class ConsultationsComponent implements OnInit {
 
     this.consultationService.getCompletedConsultations(pId).subscribe({
       next: (consultations) => {
-        this.patientHistoryConsultations = consultations;
+        this.patientHistoryConsultations = consultations || [];
         this.isLoadingHistory = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.toastService.error('Failed to load patient history.');
         this.isLoadingHistory = false;
+        this.cdr.detectChanges();
       }
     });
   }

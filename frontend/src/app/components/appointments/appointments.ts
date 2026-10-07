@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,12 +9,6 @@ import { Appointment, Patient } from '../../models/opd.models';
 
 /**
  * AppointmentsComponent — Screen 2: Appointment Booking and Schedule Listing.
- * 
- * Features:
- * 1. Book appointment with patient selector, doctor selector, date picker, and time slot.
- * 2. Tab 1: "Today's Appointments" (OPD Queue with status indicators).
- * 3. Tab 2: "All Appointments" (Historical and upcoming appointments).
- * 4. One-click "Start Consultation" navigation.
  */
 @Component({
   selector: 'app-appointments',
@@ -30,8 +24,8 @@ export class AppointmentsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
-  // Available doctors list for dropdown selection
   doctorsList = [
     'Dr. Anita Desai (General Physician)',
     'Dr. Rajesh Verma (Cardiologist)',
@@ -40,7 +34,6 @@ export class AppointmentsComponent implements OnInit {
     'Dr. Rohit Sengupta (ENT Specialist)'
   ];
 
-  // State variables
   activeTab: 'today' | 'all' = 'today';
   todayAppointments: Appointment[] = [];
   allAppointments: Appointment[] = [];
@@ -49,7 +42,6 @@ export class AppointmentsComponent implements OnInit {
   isSubmitting = false;
   showBookModal = false;
 
-  // Appointment Booking Form
   bookingForm: FormGroup = this.fb.group({
     patientId: [null, [Validators.required]],
     doctorName: [this.doctorsList[0], [Validators.required]],
@@ -61,19 +53,16 @@ export class AppointmentsComponent implements OnInit {
     this.loadPatientsList();
     this.loadAppointments();
 
-    // Check if a patient was passed via route queryParams (e.g. ?patientId=2)
     this.route.queryParams.subscribe(params => {
       if (params['patientId']) {
         const pId = Number(params['patientId']);
         this.bookingForm.patchValue({ patientId: pId });
         this.showBookModal = true;
+        this.cdr.detectChanges();
       }
     });
   }
 
-  /**
-   * Helper to format today's date as YYYY-MM-DD for the HTML date picker.
-   */
   getTodayDateString(): string {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -82,48 +71,41 @@ export class AppointmentsComponent implements OnInit {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  /**
-   * Load registered patients to populate the dropdown in booking modal.
-   */
   loadPatientsList(): void {
     this.patientService.getAllPatients().subscribe({
       next: (data) => {
-        this.patients = data;
+        this.patients = data || [];
+        this.cdr.detectChanges();
       },
       error: (err) => console.error('Error fetching patients for booking dropdown', err)
     });
   }
 
-  /**
-   * Load today's schedule and all appointments.
-   */
   loadAppointments(): void {
     this.isLoading = true;
 
-    // Fetch Today's Queue
     this.appointmentService.getTodaysAppointments().subscribe({
       next: (todayData) => {
-        this.todayAppointments = todayData;
+        this.todayAppointments = todayData || [];
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.toastService.error('Failed to load today appointments');
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
 
-    // Fetch All Appointments
     this.appointmentService.getAllAppointments().subscribe({
       next: (allData) => {
-        this.allAppointments = allData;
+        this.allAppointments = allData || [];
+        this.cdr.detectChanges();
       },
       error: (err) => console.error('Error loading all appointments', err)
     });
   }
 
-  /**
-   * Open the appointment booking modal.
-   */
   openBookModal(): void {
     this.bookingForm.patchValue({
       doctorName: this.doctorsList[0],
@@ -133,16 +115,10 @@ export class AppointmentsComponent implements OnInit {
     this.showBookModal = true;
   }
 
-  /**
-   * Close the booking modal.
-   */
   closeBookModal(): void {
     this.showBookModal = false;
   }
 
-  /**
-   * Submit the new appointment booking.
-   */
   submitBooking(): void {
     if (this.bookingForm.invalid) {
       this.bookingForm.markAllAsTouched();
@@ -154,7 +130,6 @@ export class AppointmentsComponent implements OnInit {
     const formVal = this.bookingForm.value;
     const patientId = Number(formVal.patientId);
 
-    // Format appointment time properly as HH:mm:00
     let timeVal = formVal.appointmentTime;
     if (timeVal && timeVal.split(':').length === 2) {
       timeVal += ':00';
@@ -177,13 +152,11 @@ export class AppointmentsComponent implements OnInit {
         const errorMsg = err.error?.message || 'Failed to book appointment.';
         this.toastService.error(errorMsg);
         this.isSubmitting = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
-  /**
-   * Direct navigation to the Consultation room for this appointment.
-   */
   startConsultation(app: Appointment): void {
     this.router.navigate(['/consultations'], {
       queryParams: { appointmentId: app.id }
